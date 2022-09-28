@@ -60,16 +60,58 @@ FROM drug
 ORDER BY drug_name;
 
 -- q4 b)
-SELECT DISTINCT drug_name, total_drug_cost::money,
-	CASE WHEN opioid_drug_flag = 'Y' THEN 'opiod' 
-		 WHEN antibiotic_drug_flag = 'Y' THEN 'antibiotic'
-		 ELSE 'neither' END AS drug_type
-FROM drug
-INNER JOIN prescription
-USING(drug_name)
-ORDER BY total_drug_cost DESC;
+SELECT SUM(total_drug_cost)::money, drug_type
+FROM(
+	 SELECT DISTINCT drug_name, total_drug_cost::money,
+		CASE WHEN opioid_drug_flag = 'Y' THEN 'opioid' 
+		 	 WHEN antibiotic_drug_flag = 'Y' THEN 'antibiotic'
+		 	 ELSE 'neither' END AS drug_type
+	 FROM drug
+	 INNER JOIN prescription
+	 USING(drug_name)
+	) AS poo
+WHERE drug_type = 'opioid' OR drug_type = 'antibiotic'
+GROUP BY drug_type;
 
---q5
+-- q5 a) 10 CBSA in TN
+SELECT DISTINCT cbsa, cbsaname
+	--SELECT COUNT(DISTINCT cbsa)
+FROM cbsa
+INNER JOIN fips_county
+USING(fipscounty)
+WHERE state = 'TN';
+
+-- q5 b) Nashville-Davidson--Murfreesboro--Franklin, TN
+--		 Morristown, TN
+
+SELECT cbsaname, SUM(population) AS pop_total, cbsa
+FROM cbsa
+INNER JOIN population
+USING(fipscounty) 
+GROUP BY cbsaname, cbsa
+ORDER BY pop_total DESC;
+
+-- q5 c) NOT DONE!
+/*
+SELECT county, population, cbsaname
+FROM cbsa
+INNER JOIN population 
+USING(fipscounty) 
+RIGHT JOIN fips_county USING(fipscounty)
+WHERE cbsaname IS NULL
+*/
+
+SELECT county, 
+	population, 
+	cbsaname
+FROM population
+LEFT JOIN cbsa
+	USING(fipscounty)
+LEFT JOIN fips_county
+	USING(fipscounty) 
+WHERE cbsaname IS NULL
+ORDER BY population DESC;
+
 
 
 
